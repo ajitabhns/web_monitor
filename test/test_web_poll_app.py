@@ -87,11 +87,26 @@ class PollWebEventTester(unittest.TestCase):
 class KafkaTester(unittest.TestCase):
     def setUp(self):
         self.wm_c = web_poll_consumer_app.WebMonitorApp_C(web_poll_consumer_app.kafka_config)
+        self.wm_p = web_poll_producer_app.WebMonitorApp_P(web_poll_producer_app.kafka_config)
         self.pwe = pollWebEvent.PollWebEvent()
+        self.wm_c.consumer.subscribe([self.pwe.topic_name])
 
     def test_consumer_1(self):
-        self.wm_c.consumer.subscribe([self.pwe.topic_name])
         assert self.wm_c.consumer.topics() == {'poll_web'}
+
+    def test_producer_2(self):
+        website = self.pwe.websites[0]
+        key, value = self.pwe.web_monitor(website.get('url'), regex=website.get('regex'))
+        self.wm_p.producer.send(self.pwe.topic_name, key, value).add_callback(self.on_send_success)
+        self.wm_p.producer.flush()
+
+    def on_send_success(self, record_metadata):
+        assert record_metadata.topic == 'poll_web'
+        assert record_metadata.partition == 0
+
+    def test_consumer_3(self):
+        msg = self.wm_c.consumer.poll(timeout_ms=1.0)
+        assert msg == {}
 
     def tearDown(self):
         self.wm_c.consumer.close()

@@ -5,6 +5,9 @@ import random
 import yaml
 import logging
 import os
+from requests.packages.urllib3.exceptions import InsecureRequestWarning
+
+requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 logger = logging.getLogger('web_poll_producer_app.pollWebEvent')
 
@@ -26,7 +29,8 @@ class PollWebEvent(Event):
 
     @staticmethod
     def get_web_config():
-        web_config = yaml.load(open(os.path.join(os.path.dirname(__file__), 'config', 'websites.yml')), Loader=yaml.Loader)
+        with open(os.path.join(os.path.dirname(__file__), 'config', 'websites.yml')) as f:
+            web_config = yaml.load(f, Loader=yaml.Loader)
         return web_config['websites']
 
 
