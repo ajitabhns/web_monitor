@@ -5,12 +5,11 @@ import yaml
 import sys
 import os
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-# from db_writer import DBWriter
-# from pollWebEvent import PollWebEvent
-from src import db_writer
-from src import pollWebEvent
-
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
+import db_writer
+import pollWebEvent
+import web_poll_consumer_app
+import web_poll_producer_app
 
 class DBWriterTester(unittest.TestCase):
     def setUp(self):
@@ -86,11 +85,16 @@ class PollWebEventTester(unittest.TestCase):
         assert value['error_code'] == 403
 
 class KafkaTester(unittest.TestCase):
-    def setUp():
-        pass
+    def setUp(self):
+        self.wm_c = web_poll_consumer_app.WebMonitorApp_C(web_poll_consumer_app.kafka_config)
+        self.pwe = pollWebEvent.PollWebEvent()
 
-    def tearDown():
-        pass
+    def test_consumer_1(self):
+        self.wm_c.consumer.subscribe([self.pwe.topic_name])
+        assert self.wm_c.consumer.topics() == {'poll_web'}
+
+    def tearDown(self):
+        self.wm_c.consumer.close()
 
 if __name__ == '__main__':
     unittest.main()
