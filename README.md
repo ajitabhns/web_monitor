@@ -14,9 +14,9 @@ pip3 install -r requirements.txt
 
 ### Consumer
 ```bash
-py web_poll_producer_app.py
+py web_poll_consumer_app.py
 ```
 ### Producer
 ```bash
-py web_poll_consumer_app.py
+py web_poll_producer_app.py
 ```
