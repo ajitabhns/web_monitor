@@ -1,0 +1,12 @@
+websites:
+  -
+    url: url
+  -
+    url: url
+    regex: regex
+  -
+    url: url
+    regex: regex
+  -
+    url: url
+    regex: regex

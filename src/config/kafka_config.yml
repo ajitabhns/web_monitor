@@ -1,0 +1,5 @@
+kafka-test:
+  hostname: hostname
+  port: port
+  cert_folder: cert_folder
+  log_path: log_path
