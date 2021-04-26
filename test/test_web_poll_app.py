@@ -4,6 +4,7 @@ import datetime
 import yaml
 import sys
 import os
+from kafka.structs import TopicPartition
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
 import db_writer
@@ -91,22 +92,29 @@ class KafkaTester(unittest.TestCase):
         self.pwe = pollWebEvent.PollWebEvent()
         self.wm_c.consumer.subscribe([self.pwe.topic_name])
 
-    def test_consumer_1(self):
+    def test_consumer_4(self):
         assert self.wm_c.consumer.topics() == {'poll_web'}
 
-    def test_producer_2(self):
-        website = self.pwe.websites[0]
+    def test_producer_5(self):
+        website = self.pwe.websites[1]
         key, value = self.pwe.web_monitor(website.get('url'), regex=website.get('regex'))
-        self.wm_p.producer.send(self.pwe.topic_name, key, value).add_callback(self.on_send_success)
+        record_metadata = self.wm_p.producer.send(self.pwe.topic_name, key=key, value=value)
         self.wm_p.producer.flush()
+        
+        self.wm_c.consumer.topics()
+        self.wm_c.consumer.poll()
+        self.wm_c.consumer.seek(record_metadata.value.topic_partition, record_metadata.value.offset)
+        res = self.wm_c.consumer.poll(100)
 
-    def on_send_success(self, record_metadata):
-        assert record_metadata.topic == 'poll_web'
-        assert record_metadata.partition == 0
+        if res:
+            messages = res[TopicPartition(topic=self.pwe.topic_name, partition=0)]
+            assert len(messages) == 1
 
-    def test_consumer_3(self):
-        msg = self.wm_c.consumer.poll(timeout_ms=1.0)
-        assert msg == {}
+            for message in messages:
+                assert msg.offset == record_metadata.value.offset
+                assert msg.key == key
+                print(f'{message}')
+                print(key)
 
     def tearDown(self):
         self.wm_c.consumer.close()

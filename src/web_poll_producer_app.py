@@ -46,7 +46,7 @@ class WebMonitorApp_P():
 
             try:
                 logger.info(f"Sending message {self.pwe.topic_name} - {key} - {value}")
-                self.producer.send(self.pwe.topic_name, key, value)
+                self.producer.send(self.pwe.topic_name, key=key, value=value)
                 self.producer.flush()
             except KafkaTimeoutError as e:
                 logger.error(f"{e} {self.pwe.topic_name} - {key} - {value}")
