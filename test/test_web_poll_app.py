@@ -13,6 +13,9 @@ import web_poll_consumer_app
 import web_poll_producer_app
 
 class DBWriterTester(unittest.TestCase):
+    """
+    Test cases for DBWriter class
+    """
     def setUp(self):
         self.connect_str = db_writer.DBWriter.get_db_connect_str()
         self.conn = psycopg2.connect(self.connect_str)
@@ -61,6 +64,9 @@ class DBWriterTester(unittest.TestCase):
         self.conn.close()
 
 class PollWebEventTester(unittest.TestCase):
+    """
+    Test cases for pollWebEvent class
+    """
     def setUp(self):
         self.pwe = pollWebEvent.PollWebEvent()
 
@@ -86,6 +92,9 @@ class PollWebEventTester(unittest.TestCase):
         assert value['error_code'] == 403
 
 class KafkaTester(unittest.TestCase):
+    """
+    Testcases for kafka consumer/producer classes (WebMonitorApp_C, WebMonitorApp_P)
+    """
     def setUp(self):
         self.wm_c = web_poll_consumer_app.WebMonitorApp_C(web_poll_consumer_app.kafka_config)
         self.wm_p = web_poll_producer_app.WebMonitorApp_P(web_poll_producer_app.kafka_config)
