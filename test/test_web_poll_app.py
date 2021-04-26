@@ -113,8 +113,6 @@ class KafkaTester(unittest.TestCase):
             for message in messages:
                 assert msg.offset == record_metadata.value.offset
                 assert msg.key == key
-                print(f'{message}')
-                print(key)
 
     def tearDown(self):
         self.wm_c.consumer.close()
