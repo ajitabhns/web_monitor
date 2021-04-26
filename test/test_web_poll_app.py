@@ -64,21 +64,21 @@ class PollWebEventTester(unittest.TestCase):
     def setUp(self):
         self.pwe = pollWebEvent.PollWebEvent()
 
-    def test_poll_web_event_1(self):
+    def test_poll_web_event_2(self):
         website = self.pwe.websites[0]
         key, value = self.pwe.web_monitor(website.get('url'), regex=website.get('regex'))
         assert key['url'] == 'http://www.google.com/'
         assert value['pattern_in_page'] == None
         assert value['error_code'] == 200
 
-    def test_poll_web_event_2(self):
+    def test_poll_web_event_3(self):
         website = self.pwe.websites[1]
         key, value = self.pwe.web_monitor(website.get('url'), regex=website.get('regex'))
         assert key['url'] == 'https://docs.docker.com/compose/'
         assert value['pattern_in_page'] == True
         assert value['error_code'] == 200
 
-    def test_poll_web_event_3(self):
+    def test_poll_web_event_4(self):
         website = self.pwe.websites[3]
         key, value = self.pwe.web_monitor(website.get('url'), regex=website.get('regex'))
         assert key['url'] == 'https://docs.docker.com/copose/'
@@ -92,10 +92,10 @@ class KafkaTester(unittest.TestCase):
         self.pwe = pollWebEvent.PollWebEvent()
         self.wm_c.consumer.subscribe([self.pwe.topic_name])
 
-    def test_consumer_4(self):
+    def test_kafka_5(self):
         assert self.wm_c.consumer.topics() == {'poll_web'}
 
-    def test_producer_5(self):
+    def test_kafka_6(self):
         website = self.pwe.websites[1]
         key, value = self.pwe.web_monitor(website.get('url'), regex=website.get('regex'))
         record_metadata = self.wm_p.producer.send(self.pwe.topic_name, key=key, value=value)
@@ -111,8 +111,13 @@ class KafkaTester(unittest.TestCase):
             assert len(messages) == 1
 
             for message in messages:
-                assert msg.offset == record_metadata.value.offset
-                assert msg.key == key
+                assert message.offset == record_metadata.value.offset
+                assert message.key['url'] == key['url']
+                assert message.key['access_time'] == key['access_time'].isoformat()
+                assert message.value['error_code'] == value['error_code']
+                assert message.value['http_response_time_in_s'] == value['http_response_time_in_s']
+                assert message.value['pattern_in_page'] == value['pattern_in_page']
+                assert message.value['regex'] == value['regex']
 
     def tearDown(self):
         self.wm_c.consumer.close()
