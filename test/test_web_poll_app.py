@@ -17,10 +17,8 @@ class DBWriterTester(unittest.TestCase):
     Test cases for DBWriter class
     """
     def setUp(self):
-        self.connect_str = db_writer.DBWriter.get_db_connect_str()
-        self.conn = psycopg2.connect(self.connect_str)
-        self.cur = self.conn.cursor()
-        self.cur.execute(" \
+        self.db_writer = db_writer.DBWriter()
+        self.db_writer.cur.execute(" \
                 CREATE TABLE web_monitor_test(url text, \
                 access_time timestamp, \
                 error_code integer, \
@@ -51,17 +49,17 @@ class DBWriterTester(unittest.TestCase):
                 'pattern_in_page': True, 
                 'regex': 'cloud'}]
 
-        for names in data:
-            q1 = db_writer.DBWriter.create_query_string(names, table='web_monitor_test')
-            self.cur.execute(q1, vars=names)
-            self.cur.execute("SELECT * FROM web_monitor_test;")
-            results = self.cur.fetchall()
+        q1 = db_writer.DBWriter.create_query_string(data[0].keys(), table='web_monitor_test')
+        self.db_writer.execute(q1, data)
+        self.db_writer.cur.execute("SELECT * FROM web_monitor_test;")
+        results = self.db_writer.cur.fetchall()
         assert len(results) == 3
 
     def tearDown(self):
-        self.cur.execute("DROP TABLE web_monitor_test")
-        self.cur.close()
-        self.conn.close()
+        self.db_writer.cur.execute("DROP TABLE web_monitor_test")
+        self.db_writer.conn.commit()
+        self.db_writer.cur.close()
+        self.db_writer.conn.close()
 
 class PollWebEventTester(unittest.TestCase):
     """
@@ -72,24 +70,24 @@ class PollWebEventTester(unittest.TestCase):
 
     def test_poll_web_event_2(self):
         website = self.pwe.websites[0]
-        key, value = self.pwe.web_monitor(website.get('url'), regex=website.get('regex'))
-        assert key['url'] == 'http://www.google.com/'
-        assert value['pattern_in_page'] == None
-        assert value['error_code'] == 200
+        self.pwe.web_monitor(website.get('url'), regex=website.get('regex'))
+        assert self.pwe.key['url'] == 'http://www.google.com/'
+        assert self.pwe.value['pattern_in_page'] == None
+        assert self.pwe.value['error_code'] == 200
 
     def test_poll_web_event_3(self):
         website = self.pwe.websites[1]
-        key, value = self.pwe.web_monitor(website.get('url'), regex=website.get('regex'))
-        assert key['url'] == 'https://docs.docker.com/compose/'
-        assert value['pattern_in_page'] == True
-        assert value['error_code'] == 200
+        self.pwe.web_monitor(website.get('url'), regex=website.get('regex'))
+        assert self.pwe.key['url'] == 'https://docs.docker.com/compose/'
+        assert self.pwe.value['pattern_in_page'] == True
+        assert self.pwe.value['error_code'] == 200
 
     def test_poll_web_event_4(self):
         website = self.pwe.websites[3]
-        key, value = self.pwe.web_monitor(website.get('url'), regex=website.get('regex'))
-        assert key['url'] == 'https://docs.docker.com/copose/'
-        assert value['pattern_in_page'] == False
-        assert value['error_code'] == 403
+        self.pwe.web_monitor(website.get('url'), regex=website.get('regex'))
+        assert self.pwe.key['url'] == 'https://docs.docker.com/copose/'
+        assert self.pwe.value['pattern_in_page'] == False
+        assert self.pwe.value['error_code'] == 403
 
 class KafkaTester(unittest.TestCase):
     """
@@ -106,8 +104,8 @@ class KafkaTester(unittest.TestCase):
 
     def test_kafka_6(self):
         website = self.pwe.websites[1]
-        key, value = self.pwe.web_monitor(website.get('url'), regex=website.get('regex'))
-        record_metadata = self.wm_p.producer.send(self.pwe.topic_name, key=key, value=value)
+        self.pwe.web_monitor(website.get('url'), regex=website.get('regex'))
+        record_metadata = self.wm_p.producer.send(self.pwe.topic_name, key=self.pwe.key, value=self.pwe.value)
         self.wm_p.producer.flush()
         
         self.wm_c.consumer.topics()
@@ -121,12 +119,12 @@ class KafkaTester(unittest.TestCase):
 
             for message in messages:
                 assert message.offset == record_metadata.value.offset
-                assert message.key['url'] == key['url']
-                assert message.key['access_time'] == key['access_time'].isoformat()
-                assert message.value['error_code'] == value['error_code']
-                assert message.value['http_response_time_in_s'] == value['http_response_time_in_s']
-                assert message.value['pattern_in_page'] == value['pattern_in_page']
-                assert message.value['regex'] == value['regex']
+                assert message.key['url'] == self.pwe.key['url']
+                assert message.key['access_time'] == self.pwe.key['access_time'].isoformat()
+                assert message.value['error_code'] == self.pwe.value['error_code']
+                assert message.value['http_response_time_in_s'] == self.pwe.value['http_response_time_in_s']
+                assert message.value['pattern_in_page'] == self.pwe.value['pattern_in_page']
+                assert message.value['regex'] == self.pwe.value['regex']
 
     def tearDown(self):
         self.wm_c.consumer.close()

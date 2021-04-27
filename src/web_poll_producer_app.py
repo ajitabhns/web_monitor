@@ -39,17 +39,17 @@ class WebMonitorApp_P():
         while True:
             try:
                 website = random.choice(self.pwe.websites)
-                key, value = self.pwe.web_monitor(website.get('url'), regex=website.get('regex'))
+                self.pwe.web_monitor(website.get('url'), regex=website.get('regex'))
             except:
                 logger.error(f"Request failed for {website.get('url')}")
                 continue
 
             try:
-                logger.info(f"Sending message {self.pwe.topic_name} - {key} - {value}")
-                self.producer.send(self.pwe.topic_name, key=key, value=value)
+                logger.info(f"Sending message {self.pwe.topic_name} - {self.pwe.key} - {self.pwe.value}")
+                self.producer.send(self.pwe.topic_name, key=self.pwe.key, value=self.pwe.value)
                 self.producer.flush()
             except KafkaTimeoutError as e:
-                logger.error(f"{e} {self.pwe.topic_name} - {key} - {value}")
+                logger.error(f"{e} {self.pwe.topic_name} - {self.pwe.key} - {self.pwe.value}")
                 continue
 
     @staticmethod

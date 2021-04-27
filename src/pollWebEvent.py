@@ -35,32 +35,36 @@ class PollWebEvent(Event):
 
 
     def web_monitor(self, url, regex=None):
+        pattern_in_page = None
+        http_response_time_in_s = None
+        error_code = None
+
+        self.key = {
+            "url": url,
+            "access_time": datetime.datetime.now()
+        }
+
         try:
             res = requests.get(url, verify=False)
 
-            is_present = None
+            http_response_time_in_s = round(res.elapsed.total_seconds(), 2)
+            error_code = res.status_code
+
             if regex:
-                is_present = re.search(regex, res.text) and True or False
-
-            self.key = {
-                "url": url,
-                "access_time": datetime.datetime.now()
-            }
-
-            self.value = {
-                "error_code": res.status_code,
-                "http_response_time_in_s": round(res.elapsed.total_seconds(), 2),
-                "pattern_in_page": is_present,
-                "regex": regex
-            }
-        except:
+                pattern_in_page = re.search(regex, res.text) and True or False
+        except requests.exceptions.ConnectionError:
+            error_code = 521
             logger.error(f"Request failed for {url}!!!")
-            raise
-
-        return self.key, self.value
-
+        
+        self.value = {
+            "error_code": error_code,
+            "http_response_time_in_s": http_response_time_in_s,
+            "pattern_in_page": pattern_in_page,
+            "regex": regex
+        }
+    
 if __name__ == '__main__':
     pwe = PollWebEvent()
     for website in pwe.websites:
-        key, value = pwe.web_monitor(website.get('url'), regex=website.get('regex'))
-        logger.info(f'{key}-{value}')
+        pwe.web_monitor(website.get('url'), regex=website.get('regex'))
+        logger.info(f'{pwe.key}-{pwe.value}')
